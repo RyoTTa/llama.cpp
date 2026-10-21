@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <numeric>
 #include <sstream>
@@ -2300,6 +2301,20 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
 
     //call early so that topk-moe can be used
     ggml_build_forward_expand(gf, weights);
+
+    // MoE routing trace: keep topk ids + final weights alive until graph end.
+    // Nodes are explicitly named moe_trace_topk-<il> / moe_trace_weights-<il> and are
+    // the ONLY tensors the trace hook reads. Extra 2 tiny copies/layer, no effect on results.
+    if (std::getenv("LLAMA_MOE_TRACE")) {
+        ggml_tensor * keep_ids = ggml_cpy(ctx0, selected_experts, ggml_dup_tensor(ctx0, selected_experts));
+        ggml_format_name(keep_ids, "moe_trace_topk-%d", il);
+        ggml_build_forward_expand(gf, keep_ids);
+        // flatten weights to 2D [k, n_tokens] so the trace hook reads uniform rows
+        ggml_tensor * weights_2d = ggml_reshape_2d(ctx0, weights, n_expert_used, n_tokens);
+        ggml_tensor * keep_w = ggml_cpy(ctx0, weights_2d, ggml_new_tensor_2d(ctx0, weights_2d->type, n_expert_used, n_tokens));
+        ggml_format_name(keep_w, "moe_trace_weights-%d", il);
+        ggml_build_forward_expand(gf, keep_w);
+    }
 
     // the experts of host-resident layers may be read from the MoE cache
     ggml_tensor * slots = build_moe_cache_slots(selected_experts, up_exps, gate_exps, down_exps, gate_up_exps, il);

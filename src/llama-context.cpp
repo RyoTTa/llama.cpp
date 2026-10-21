@@ -1525,18 +1525,18 @@ struct moe_trace_state {
 };
 
 static bool moe_trace_name_match(const char * name, const char * prefix, int & layer_out) {
+    // exact match "<prefix>-<il>" (ggml appends " (reshaped)"/" (copy)" to derived views: skip those)
     const size_t np = strlen(prefix);
     if (strncmp(name, prefix, np) != 0) return false;
-    // name format is "<prefix>-<il>"
     if (name[np] != '-') return false;
     char * end = nullptr;
     long il = strtol(name + np + 1, &end, 10);
-    if (end == name + np + 1 || il < 0) return false;
+    if (end == name + np + 1 || il < 0 || *end != '\0') return false;
     layer_out = (int) il;
     return true;
 }
 
-static void moe_trace_collect(ggml_backend_sched_t sched, ggml_cgraph * gf, const llama_ubatch & ubatch) {
+static void moe_trace_collect(ggml_backend_sched_t sched, ggml_cgraph * gf, const llama_ubatch & ubatch, const std::vector<int32_t> & out_ids) {
     static moe_trace_state st;
     if (!st.f) {
         const char * path = std::getenv("LLAMA_MOE_TRACE");
@@ -1559,7 +1559,41 @@ static void moe_trace_collect(ggml_backend_sched_t sched, ggml_cgraph * gf, cons
             int il = -1;
             if (moe_trace_name_match(ggml_get_name(node), "ffn_moe_topk", il)) max_il = std::max(max_il, il);
         }
+        if (std::getenv("LLAMA_MOE_TRACE_DEBUG")) {
+            int n_out = 0;
+            for (int i = 0; i < n_nodes; i++) {
+                ggml_tensor * nd = ggml_graph_node(gf, i);
+                const char * nm = ggml_get_name(nd);
+                if (strstr(nm, "out_ids") || strstr(nm, "inp_out") || strstr(nm, "out_row")) {
+                    fprintf(stderr, "moe_trace: out-ish node [%d] name='%s' type=%d ne=[%lld,%lld]\n",
+                        i, nm, (int) nd->type, (long long) nd->ne[0], (long long) nd->ne[1]);
+                    if (++n_out > 6) break;
+                }
+            }
+            int n_moe = 0;
+            for (int i = 0; i < n_nodes; i++) {
+                ggml_tensor * nd = ggml_graph_node(gf, i);
+                const char * nm = ggml_get_name(nd);
+                if (strstr(nm, "topk")) {
+                    fprintf(stderr, "moe_trace: topk node [%d] name='%s' type=%d ne=[%lld,%lld,%lld]\n",
+                        i, nm, (int) nd->type,
+                        (long long) nd->ne[0], (long long) nd->ne[1], (long long) nd->ne[2]);
+                    n_moe++;
+                }
+            }
+            fprintf(stderr, "moe_trace: %d topk nodes, max_il=%d\n", n_moe, max_il);
+        }
         if (max_il < 0) { st.last_gf = gf; return; } // not an MoE graph (or no topk): nothing to do
+        if (std::getenv("LLAMA_MOE_TRACE_DEBUG")) {
+            for (size_t li = 0; li < st.topk.size(); li++) {
+                ggml_tensor * t = st.topk[li];
+                fprintf(stderr, "moe_trace: layer %zu topk=%p type=%d ne=[%lld,%lld] backend=%s w=%p\n",
+                    li, (void *) t, t ? (int) t->type : -1,
+                    t ? (long long) t->ne[0] : -1, t ? (long long) t->ne[1] : -1,
+                    t ? ggml_backend_name(ggml_backend_sched_get_tensor_backend(sched, t)) : "none",
+                    (void *) (st.have_w[li] ? st.wnorm[li] : nullptr));
+            }
+        }
         st.topk.assign(max_il + 1, nullptr);
         st.wnorm.assign(max_il + 1, nullptr);
         st.layer_id.assign(max_il + 1, -1);
@@ -1567,9 +1601,9 @@ static void moe_trace_collect(ggml_backend_sched_t sched, ggml_cgraph * gf, cons
         for (int i = 0; i < n_nodes; i++) {
             ggml_tensor * node = ggml_graph_node(gf, i);
             int il = -1;
-            if (moe_trace_name_match(ggml_get_name(node), "ffn_moe_topk", il)) {
+            if (moe_trace_name_match(ggml_get_name(node), "moe_trace_topk", il)) {
                 if (node->type == GGML_TYPE_I32) { st.topk[il] = node; st.layer_id[il] = il; }
-            } else if (moe_trace_name_match(ggml_get_name(node), "ffn_moe_weights_norm", il)) {
+            } else if (moe_trace_name_match(ggml_get_name(node), "moe_trace_weights", il)) {
                 if (il <= max_il) { st.wnorm[il] = node; st.have_w[il] = 1; }
             }
         }
@@ -1577,60 +1611,82 @@ static void moe_trace_collect(ggml_backend_sched_t sched, ggml_cgraph * gf, cons
     }
     if (st.topk.empty()) return;
 
-    // validate shapes against this ubatch (graph reuse implies same n_tokens, re-check anyway)
-    int32_t k = 0;
-    for (auto * t : st.topk) {
-        if (!t) return;
-        if (t->ne[1] != (int64_t) n_tokens) return; // shape changed: skip this call (will rescan never; shapes fixed per graph)
-        k = (int32_t) t->ne[0];
+    // output row -> ubatch row map for filtered (last-layer) tensors
+    const int64_t n_out_ids = (int64_t) out_ids.size();
+    if (std::getenv("LLAMA_MOE_TRACE_DEBUG")) {
+        fprintf(stderr, "moe_trace: collect ntok=%u nlayers=%zu n_out_ids=%lld\n",
+            n_tokens, st.topk.size(), (long long) n_out_ids);
+        for (size_t li = 0; li < st.topk.size() && li < 3; li++) {
+            ggml_tensor * w = (st.have_w[li] && st.wnorm[li]) ? st.wnorm[li] : nullptr;
+            if (w) fprintf(stderr, "moe_trace: w%zu ne=[%lld,%lld,%lld] nb=[%zu,%zu,%zu] name=%s\n", li,
+                (long long) w->ne[0], (long long) w->ne[1], (long long) w->ne[2],
+                w->nb[0], w->nb[1], w->nb[2], ggml_get_name(w));
+        }
     }
-    if (k <= 0 || k > 64) return;
-
-    // async device->host copies, then a single synchronize (one extra sync per ubatch)
-    size_t per_tok_ids = (size_t) k * sizeof(int32_t);
-    // weights may be [k, n_tokens] or [1, k, n_tokens]; handle via strides at write time
-    st.stage32.assign(st.topk.size() * (size_t) k * n_tokens, 0);
-    // gather total weight bytes (sum over layers, not max)
-    size_t wsum = 0;
-    for (size_t li = 0; li < st.topk.size(); li++) {
-        if (st.have_w[li] && st.wnorm[li]) wsum += ggml_nbytes(st.wnorm[li]);
-    }
-    st.stagef.assign((wsum + sizeof(float) - 1) / sizeof(float), 0.0f);
-    size_t woff = 0;
-    std::vector<size_t> woffs(st.topk.size(), 0);
+    // per-layer exact staging (byte-exact copies; rows mapped via out_ids when filtered)
+    struct lay_info { ggml_tensor * t; ggml_tensor * w; int layer; size_t id_off; size_t w_off; int64_t n_rows; };
+    std::vector<lay_info> lays;
+    size_t id_total = 0, w_total = 0;
     for (size_t li = 0; li < st.topk.size(); li++) {
         ggml_tensor * t = st.topk[li];
-        ggml_backend_t be = ggml_backend_sched_get_tensor_backend(sched, t);
-        ggml_backend_tensor_get_async(be, t, st.stage32.data() + li * (size_t) k * n_tokens, 0, ggml_nbytes(t));
-        if (st.have_w[li] && st.wnorm[li]) {
-            ggml_tensor * w = st.wnorm[li];
-            ggml_backend_t bew = ggml_backend_sched_get_tensor_backend(sched, w);
-            woffs[li] = woff;
-            ggml_backend_tensor_get_async(bew, w, (int8_t *) st.stagef.data() + woff, 0, ggml_nbytes(w));
-            woff += ggml_nbytes(w);
+        if (!t || t->type != GGML_TYPE_I32 || t->ne[0] <= 0 || t->ne[0] > 64) continue;
+        const int64_t nr = ggml_nrows(t);
+        if (nr != (int64_t) n_tokens && nr != n_out_ids) continue; // cannot map: skip layer
+        lay_info li_info;
+        li_info.t = t; li_info.layer = st.layer_id[li];
+        li_info.id_off = id_total; id_total += ggml_nbytes(t);
+        li_info.w = (st.have_w[li] && st.wnorm[li]) ? st.wnorm[li] : nullptr;
+        li_info.w_off = w_total;
+        if (li_info.w) w_total += ggml_nbytes(li_info.w);
+        li_info.n_rows = nr;
+        lays.push_back(li_info);
+    }
+    if (lays.empty()) return;
+    st.stage32.assign((id_total + sizeof(int32_t) - 1) / sizeof(int32_t), 0);
+    st.stagef.assign((w_total + sizeof(float) - 1) / sizeof(float), 0.0f);
+    for (auto & li : lays) {
+        ggml_backend_t be = ggml_backend_sched_get_tensor_backend(sched, li.t);
+        ggml_backend_tensor_get_async(be, li.t, (int8_t *) st.stage32.data() + li.id_off, 0, ggml_nbytes(li.t));
+        if (li.w) {
+            ggml_backend_t bew = ggml_backend_sched_get_tensor_backend(sched, li.w);
+            ggml_backend_tensor_get_async(bew, li.w, (int8_t *) st.stagef.data() + li.w_off, 0, ggml_nbytes(li.w));
         }
     }
     ggml_backend_sched_synchronize(sched);
-
+    if (std::getenv("LLAMA_MOE_TRACE_DEBUG")) {
+        for (auto & li : lays) {
+            const int32_t * ids = (const int32_t *) ((const int8_t *) st.stage32.data() + li.id_off);
+            fprintf(stderr, "moe_trace: layer %d nrows=%lld first=%d,%d be=%s\n",
+                li.layer, (long long) li.n_rows, ids[0], ids[1],
+                ggml_backend_name(ggml_backend_sched_get_tensor_backend(sched, li.t)));
+        }
+    }
     const uint64_t seq = st.call_seq++;
     const int n_pos = ubatch.n_pos < 1 ? 1 : ubatch.n_pos;
-    for (uint32_t it = 0; it < n_tokens; it++) {
-        const int32_t tok_id = ubatch.token ? ubatch.token[it] : -1;
-        const int64_t pos = ubatch.pos ? ubatch.pos[it * (size_t) n_pos] : -1;
-        for (size_t li = 0; li < st.topk.size(); li++) {
-            const int32_t * ids = st.stage32.data() + li * (size_t) k * n_tokens;
-            fprintf(st.f, "%llu,%u,%u,%d,%lld,%d", (unsigned long long) seq, n_tokens, it, tok_id, (long long) pos, st.layer_id[li]);
-            for (int32_t j = 0; j < k; j++) fprintf(st.f, ",%d", ids[(size_t) it * (size_t) k + j]);
-            if (st.have_w[li] && st.wnorm[li]) {
-                ggml_tensor * w = st.wnorm[li];
-                const int8_t * base = (const int8_t *) st.stagef.data() + woffs[li];
-                // row stride: nb[1] for [k, n_tokens], nb[2]/nb[1] for [1, k, n_tokens]
-                const bool is_3d = (w->ne[0] == 1 && w->ne[1] > 1 && w->ne[2] > 1);
-                const size_t row_nb = is_3d ? w->nb[2] : w->nb[1];
-                const size_t col_nb = is_3d ? w->nb[1] : w->nb[0];
-                for (int32_t j = 0; j < k; j++) {
+    const int k = (int) lays[0].t->ne[0];
+    for (auto & li : lays) {
+        const int32_t * ids = (const int32_t *) ((const int8_t *) st.stage32.data() + li.id_off);
+        const int64_t t_stride = li.t->nb[1] / sizeof(int32_t);
+        for (int64_t r = 0; r < li.n_rows; r++) {
+            int64_t brow = r;
+            if (li.n_rows != (int64_t) n_tokens) {
+                if (r >= n_out_ids) continue;
+                brow = out_ids[(size_t) r];
+                if (brow < 0 || brow >= (int64_t) n_tokens) continue;
+            }
+            const int32_t tok_id = ubatch.token ? ubatch.token[(uint32_t) brow] : -1;
+            const int64_t pos = ubatch.pos ? ubatch.pos[(uint32_t) brow * (size_t) n_pos] : -1;
+            fprintf(st.f, "%llu,%u,%lld,%d,%lld,%d", (unsigned long long) seq, n_tokens,
+                    (long long) brow, tok_id, (long long) pos, li.layer);
+            for (int j = 0; j < k; j++) fprintf(st.f, ",%d", ids[(size_t) r * (size_t) t_stride + j]);
+            if (li.w) {
+                const int8_t * wb = (const int8_t *) st.stagef.data() + li.w_off;
+                const size_t row_nb = li.w->nb[1];
+                const size_t col_nb = li.w->nb[0];
+                const int64_t kw = li.w->ne[0];
+                for (int64_t j = 0; j < kw && j < k; j++) {
                     float v = 0.0f;
-                    memcpy(&v, base + (size_t) it * row_nb + (size_t) j * col_nb, sizeof(float));
+                    memcpy(&v, wb + (size_t) r * row_nb + (size_t) j * col_nb, sizeof(float));
                     fprintf(st.f, ",%.6g", (double) v);
                 }
             }
@@ -1712,7 +1768,7 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
     }
 
     // MoE routing trace (env-gated, no effect on results)
-    moe_trace_collect(sched.get(), res->get_gf(), ubatch);
+    moe_trace_collect(sched.get(), res->get_gf(), ubatch, balloc->get_out_ids());
 
     ret = GGML_STATUS_SUCCESS;
 
