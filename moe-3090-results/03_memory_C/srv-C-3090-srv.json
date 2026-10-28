@@ -1,0 +1,20 @@
+{
+ "tag": "C-3090-srv",
+ "n_tok": 64,
+ "ttft_ms": 270.8,
+ "total_wall_ms": 1160.5,
+ "tpot_ms": 14.115,
+ "itl_p50_ms": 11.573,
+ "itl_p95_ms": 27.297,
+ "server_timings": {
+  "cache_n": 0,
+  "prompt_n": 6,
+  "prompt_ms": 268.078,
+  "prompt_per_token_ms": 44.67966666666666,
+  "prompt_per_second": 22.38154566954394,
+  "predicted_n": 64,
+  "predicted_ms": 889.41,
+  "predicted_per_token_ms": 14.117619047619048,
+  "predicted_per_second": 70.83347387594023
+ }
+}

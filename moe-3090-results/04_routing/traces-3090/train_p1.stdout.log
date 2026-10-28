@@ -1,0 +1,41 @@
+
+
+Loading model... |-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\| 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b11695-be6149a02
+model      : /home/ryotta205/models/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> Write a Python function that implements an LRU cache with O(1) get and put operations. Use OrderedDict and explain the time complexity of each operation.
+
+[Start thinking]
+
+Okay, I need to write a Python function that implements an LRU cache with O(1) get and put operations using OrderedDict. Hmm, let me think about how an LRU cache works. 
+
+So, LRU stands for Least Recently Used. The idea is that when the cache is full, the least recently used item is removed to make space for a new one. For get and put operations, they need to be O(1) time. 
+
+I remember that in Python, the OrderedDict is a dictionary that remembers the insertion order. But wait, there's also a move_to_end method which can be useful.
+
+[ Prompt: 34.4 t/s | Generation: 166.6 t/s ]
+
+> 
+
+Exiting...

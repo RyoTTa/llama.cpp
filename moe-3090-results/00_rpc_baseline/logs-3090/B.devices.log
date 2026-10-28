@@ -1,0 +1,5 @@
+Available devices:
+  CUDA0: NVIDIA GeForce RTX 3090 (24259 MiB, 23464 MiB free)
+  CUDA1: NVIDIA GeForce RTX 3090 (24259 MiB, 23860 MiB free)
+  CUDA2: NVIDIA GeForce RTX 3090 (24259 MiB, 23860 MiB free)
+  RPC0: 127.0.0.1:50052 (24259 MiB, 23464 MiB free)

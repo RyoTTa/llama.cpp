@@ -1,0 +1,45 @@
+
+
+Loading model... |-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\| 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b11695-be6149a02
+model      : /home/ryotta205/models/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> A train travels 120 km at 60 km/h, then another 120 km at 120 km/h. What is the average speed for the whole journey? Show your reasoning step by step.
+
+[Start thinking]
+
+Okay, so I need to find the average speed for the whole journey of this train. Let me think. The train goes 120 km at 60 km/h and then another 120 km at 120 km/h. Hmm, average speed... I remember that average speed isn't just the average of the two speeds. It's total distance divided by total time, right?
+
+Let me confirm. Yeah, average speed is total distance divided by total time taken. So I need to calculate the total distance and the total time. The total distance is straightforward: 120 km + 120 km = 240 km. Got that part.
+
+Now, the tricky part is the total time. For each leg of the journey, I need to calculate the time taken and then add them together. 
+
+First leg: 120 km at 60 km/h. Time is distance divided by speed. So time1 = 120 km / 60 km/h. Let me compute that. 120 divided by 60 is 2 hours. Okay, so the first part takes 2 hours.
+
+Second leg: 120 km at 120 km
+
+[ Prompt: 48.2 t/s | Generation: 168.2 t/s ]
+
+> 
+
+Exiting...

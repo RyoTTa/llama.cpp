@@ -1,0 +1,16 @@
+=== verify placement (C-3090-bench) ===
+0.01.466.256 I load_tensors:        CUDA0 model buffer size =     0.00 MiB
+0.01.466.257 I load_tensors:        CUDA1 model buffer size =     0.00 MiB
+0.01.466.257 I load_tensors:    CUDA_Host model buffer size =     0.00 MiB
+0.01.470.549 I llama_kv_cache:      CUDA0 KV buffer size =     0.00 MiB
+0.01.470.553 I llama_kv_cache:      CUDA1 KV buffer size =     0.00 MiB
+0.01.486.657 I sched_reserve:      CUDA0 compute buffer size =   161.27 MiB
+0.01.486.660 I sched_reserve:      CUDA1 compute buffer size =     1.52 MiB
+0.01.486.661 I sched_reserve:  CUDA_Host compute buffer size =     1.02 MiB
+0.02.788.789 I load_tensors:   CPU_Mapped model buffer size =   166.92 MiB
+0.02.788.790 I load_tensors:   CPU_Mapped model buffer size =   265.50 MiB
+0.02.788.791 I load_tensors:   CPU_Mapped model buffer size =   108.00 MiB
+0.02.788.792 I load_tensors:   CPU_Mapped model buffer size =   265.50 MiB
+=== bench (C-3090-bench) ===
+C-3090-bench exit: 0 wall=93s
+DONE C-3090-bench

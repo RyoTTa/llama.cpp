@@ -1,0 +1,5 @@
+exp,config,gpus,prompt_n,gen_n,batch,ubatch,ngl,split,device_arg,prefill_mean,prefill_std,decode_mean,decode_std,combined_mean,combined_std,load_s,vram_gpu0_MiB,util_gpu0_pct,vram_gpu1_MiB,util_gpu1_pct,status
+A,native-cuda,"0",512,128,2048,512,99,none,CUDA0,4484.95,297.51,211.90,0.79,876.89,1.31,13,18833,94,3,0,ok
+B,rpc-localhost,"0",512,128,2048,512,99,none,RPC0,4119.42,323.77,181.26,1.76,741.15,4.01,52,19243,71,3,0,ok
+C,native-cuda,"0,1",512,128,2048,512,99,layer,CUDA0/CUDA1,4525.23,249.94,213.70,0.63,888.56,1.41,13,9987,40,9779,35,ok
+D,rpc-localhost,"0,1",512,128,2048,512,99,layer,RPC0/RPC1,3929.57,344.58,160.16,2.55,677.05,3.33,54,10221,35,9953,40,ok

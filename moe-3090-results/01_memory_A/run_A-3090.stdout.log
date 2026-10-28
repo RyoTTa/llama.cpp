@@ -1,0 +1,16 @@
+=== verify placement (A-3090) ===
+0.01.465.357 I load_tensors:        CUDA1 model buffer size =     0.00 MiB
+0.01.465.357 I load_tensors:    CUDA_Host model buffer size =     0.00 MiB
+0.01.469.680 I llama_kv_cache:      CUDA1 KV buffer size =     0.00 MiB
+0.01.485.806 I sched_reserve:      CUDA1 compute buffer size =   163.27 MiB
+0.01.485.806 I sched_reserve:  CUDA_Host compute buffer size =     1.02 MiB
+0.02.912.886 I load_tensors:   CPU_Mapped model buffer size =   410.36 MiB
+0.02.912.887 I load_tensors:   CPU_Mapped model buffer size = 10080.57 MiB
+0.02.912.888 I load_tensors:        CUDA1 model buffer size =  7200.42 MiB
+0.03.427.790 I llama_kv_cache:      CUDA1 KV buffer size =    24.00 MiB
+0.03.445.235 I sched_reserve:      CUDA1 compute buffer size =   163.27 MiB
+0.03.445.238 I sched_reserve:  CUDA_Host compute buffer size =     1.02 MiB
+0.03.826.809 D ~llama_context:      CUDA1 compute buffer size is 163.2667 MiB, matches expectation of 163.2667 MiB
+=== bench (A-3090) ===
+A-3090 exit: 0 wall=50s
+DONE A-3090

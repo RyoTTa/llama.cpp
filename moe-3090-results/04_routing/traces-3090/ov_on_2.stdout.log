@@ -1,0 +1,39 @@
+
+
+Loading model... |-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\| 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b11695-be6149a02
+model      : /home/ryotta205/models/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> Explain why the sky appears blue during the day but red at sunset. Describe Rayleigh scattering in simple terms for a high school student.
+
+[Start thinking]
+
+Okay, so I need to explain why the sky is blue during the day and red at sunset, and also describe Rayleigh scattering in simple terms for a high school student. Let me start by recalling what I know about this.
+
+First, I remember that the sky appears blue because of the way light interacts with
+
+[ Prompt: 31.7 t/s | Generation: 157.5 t/s ]
+
+> 
+
+Exiting...

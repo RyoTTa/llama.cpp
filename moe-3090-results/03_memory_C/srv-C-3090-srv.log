@@ -1,0 +1,19 @@
+0.00.165.571 I srv  llama_server: initializing ...
+0.00.165.588 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.166.063 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.167.912 I srv    load_model: loading model '/home/ryotta205/models/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf'
+0.01.331.501 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.445.059 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.02.550.846 I cmn          init: llama threadpool init, n_threads = 16
+0.02.749.195 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 4096, kv_unified = 'true'
+0.02.761.826 I srv  llama_server: model loaded
+0.02.761.834 I srv  llama_server: listening on http://127.0.0.1:8089
+0.52.917.599 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.52.917.685 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.54.075.259 I slot print_timing: id  0 | task 0 | prompt eval time =     268.08 ms /     6 tokens (   44.68 ms per token,    22.38 tokens per second)
+0.54.075.263 I slot print_timing: id  0 | task 0 |        eval time =     889.41 ms /    64 tokens (   14.12 ms per token,    70.83 tokens per second)
+0.54.075.264 I slot print_timing: id  0 | task 0 |       total time =    1157.49 ms /    70 tokens
+0.54.075.270 I slot print_timing: id  0 | task 0 |    graphs reused =         63
+0.54.075.271 I slot print_timing: id  0 | task 0 |   graph reallocs =          1    /     0        (same size) / (changed size)
+0.54.075.297 I slot      release: id  0 | task 0 | stop processing: n_tokens = 69, truncated = 0
+0.54.088.068 I srv    operator(): operator(): cleaning up before exit...

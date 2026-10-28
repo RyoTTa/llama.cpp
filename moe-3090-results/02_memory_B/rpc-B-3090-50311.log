@@ -1,0 +1,80 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 24259 MiB):
+  Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes, VRAM: 24259 MiB
+Starting RPC server v8.0.0
+  endpoint       : 127.0.0.1:50311
+  local cache    : n/a
+Devices:
+  CUDA0: NVIDIA GeForce RTX 3090 (24259 MiB, 23860 MiB free)
+  transport      : TCP
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed
+Accepted client connection
+recv returned 0 (peer closed?)
+Client connection closed

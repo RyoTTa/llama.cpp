@@ -1,0 +1,20 @@
+=== start RPC servers (GPU0:50310 GPU1:50311) ===
+servers ready (pids 3407416 3407417)
+=== verify placement (B-3090) ===
+0.00.760.270 I load_tensors:          CPU model buffer size =     0.00 MiB
+0.00.760.272 I load_tensors:   CPU_REPACK model buffer size =     0.00 MiB
+0.00.760.273 I load_tensors: RPC0[127.0.0.1:50310] model buffer size =     0.00 MiB
+0.00.760.275 I load_tensors: RPC0[127.0.0.1:50311] model buffer size =     0.00 MiB
+0.00.764.553 I llama_kv_cache: RPC0[127.0.0.1:50310] KV buffer size =     0.00 MiB
+0.00.764.556 I llama_kv_cache: RPC0[127.0.0.1:50311] KV buffer size =     0.00 MiB
+0.00.779.972 I sched_reserve: RPC0[127.0.0.1:50310] compute buffer size =     5.27 MiB
+0.00.779.973 I sched_reserve: RPC0[127.0.0.1:50311] compute buffer size =     5.27 MiB
+0.00.779.973 I sched_reserve:        CPU compute buffer size =     5.52 MiB
+0.02.036.507 I load_tensors:   CPU_Mapped model buffer size =   410.36 MiB
+0.02.036.509 I load_tensors:   CPU_Mapped model buffer size =     0.01 MiB
+0.02.036.511 I load_tensors:   CPU_Mapped model buffer size =   158.32 MiB
+0.02.036.512 I load_tensors:   CPU_Mapped model buffer size =     1.01 MiB
+0.02.036.514 I load_tensors:   CPU_Mapped model buffer size =     0.01 MiB
+=== bench (B-3090) ===
+B-3090 exit: 0 wall=134s
+DONE B-3090 rc=0
