@@ -42,6 +42,16 @@ static uint64_t get_time_ns() {
     return std::chrono::nanoseconds(clock::now().time_since_epoch()).count();
 }
 
+// Minimal env-gated segment timers (LLAMA_BENCH_SEGMENTS=1): split each test
+// into batch-setup / llama_process / llama_synchronize times. Tool-only
+// instrumentation, off by default; no effect on reported measurements.
+static uint64_t g_seg_batch = 0, g_seg_proc = 0, g_seg_sync = 0;
+static bool seg_enabled() {
+    static bool v = std::getenv("LLAMA_BENCH_SEGMENTS") != nullptr;
+    return v;
+}
+static void seg_reset() { g_seg_batch = 0; g_seg_proc = 0; g_seg_sync = 0; }
+
 static bool tensor_buft_override_equal(const llama_model_tensor_buft_override& a, const llama_model_tensor_buft_override& b) {
     if (a.pattern != b.pattern) {
         // cString comparison that may be null
@@ -2182,8 +2192,12 @@ static bool test_prompt(llama_context * ctx, int n_prompt, int n_batch, int n_th
         for (int i = 1; i < n_tokens; i++) {
             tokens[i] = std::rand() % n_vocab;
         }
+        uint64_t t_s = get_time_ns();
         common_batch batch = common_batch_get_one(ctx, tokens.data(), n_tokens);
+        if (seg_enabled()) g_seg_batch += get_time_ns() - t_s;
+        t_s = get_time_ns();
         int res = llama_process(ctx, LLAMA_PROCESS_TYPE_DECODE, batch.get());
+        if (seg_enabled()) g_seg_proc += get_time_ns() - t_s;
         if (res != 0) {
             fprintf(stderr, "%s: failed to decode prompt batch, res = %d\n", __func__, res);
             return false;
@@ -2191,7 +2205,9 @@ static bool test_prompt(llama_context * ctx, int n_prompt, int n_batch, int n_th
         n_processed += n_tokens;
     }
 
+    uint64_t t_sync = get_time_ns();
     llama_synchronize(ctx);
+    if (seg_enabled()) g_seg_sync += get_time_ns() - t_sync;
     return true;
 }
 
@@ -2208,14 +2224,20 @@ static bool test_gen(llama_context * ctx, int n_gen, int n_threads) {
     llama_pos pos = llama_memory_seq_pos_max(llama_get_memory(ctx), 0) + 1;
 
     for (int i = 0; i < n_gen; i++) {
+        uint64_t t_s = get_time_ns();
         batch.clear();
         batch.add(token, pos++, 0, true);
+        if (seg_enabled()) g_seg_batch += get_time_ns() - t_s;
+        t_s = get_time_ns();
         int res = llama_process(ctx, LLAMA_PROCESS_TYPE_DECODE, batch.get());
+        if (seg_enabled()) g_seg_proc += get_time_ns() - t_s;
         if (res != 0) {
             fprintf(stderr, "%s: failed to decode generation batch, res = %d\n", __func__, res);
             return false;
         }
+        t_s = get_time_ns();
         llama_synchronize(ctx);
+        if (seg_enabled()) g_seg_sync += get_time_ns() - t_s;
         token = std::rand() % n_vocab;
     }
     return true;
@@ -2441,6 +2463,7 @@ int llama_bench(int argc, char ** argv) {
             }
         }
 
+        if (seg_enabled()) seg_reset();
         for (int i = 0; i < params.reps; i++) {
             llama_memory_clear(llama_get_memory(ctx), false);
 
@@ -2512,6 +2535,13 @@ int llama_bench(int argc, char ** argv) {
 
             uint64_t t_ns = get_time_ns() - t_start;
             t.samples_ns.push_back(t_ns);
+        }
+
+        if (seg_enabled()) {
+            // totals cover warmup + all reps; per-rep client means divide by (reps + warmup_reps)
+            fprintf(stderr, "SEG pp=%d tg=%d batch_ms=%.3f process_ms=%.3f sync_ms=%.3f\n",
+                    t.n_prompt, t.n_gen, g_seg_batch/1e6, g_seg_proc/1e6, g_seg_sync/1e6);
+            seg_reset();
         }
 
         if (p) {
